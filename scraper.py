@@ -8,7 +8,17 @@ import re
 from datetime import datetime
 from fake_useragent import UserAgent
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
+try:
+    from playwright_stealth import Stealth
+    _stealth_engine = Stealth()
+    async def stealth_async(page):
+        await _stealth_engine.apply_stealth_async(page)
+except Exception:
+    try:
+        from playwright_stealth import stealth_async
+    except Exception:
+        async def stealth_async(page):
+            pass
 
 from geo_filter import validate_mexico_address
 from data_processor import clean_phone, build_nav_link

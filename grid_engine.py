@@ -6,9 +6,18 @@ import math
 import asyncio
 import random
 import time
-from dataclasses import dataclass
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
+try:
+    from playwright_stealth import Stealth
+    _stealth_engine = Stealth()
+    async def stealth_async(page):
+        await _stealth_engine.apply_stealth_async(page)
+except Exception:
+    try:
+        from playwright_stealth import stealth_async
+    except Exception:
+        async def stealth_async(page):
+            pass
 from fake_useragent import UserAgent
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
