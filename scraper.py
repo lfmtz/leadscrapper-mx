@@ -2,8 +2,17 @@
 LeadScrapper MX - Scraper Engine
 Extracción de Google Maps con Playwright asíncrono, modo stealth y selectores robustos.
 """
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import asyncio
 import random
+import time
 import re
 from datetime import datetime
 from fake_useragent import UserAgent

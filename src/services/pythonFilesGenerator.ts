@@ -49,6 +49,14 @@ libasound2
 # Motor de cuadrículas para superar el límite de 120
 # resultados por búsqueda de Google Maps
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import math
 import asyncio
 import random
@@ -388,7 +396,7 @@ async def escanear_zona_completa(
     ]
 
     # DIAGNÓSTICO: verificar que Playwright funciona
-    print("🔍 Iniciando Playwright...")
+    print("[INFO] Iniciando Playwright...")
     if progress_callback:
         progress_callback({
             "tipo": "inicio",
@@ -419,9 +427,9 @@ async def escanear_zona_completa(
             )
             await test_page.wait_for_timeout(3000)
             items_test = await test_page.query_selector_all('[role="feed"] > div')
-            print(f"✅ Playwright funciona. Items en test: {len(items_test)}")
+            print(f"[OK] Playwright funciona. Items en test: {len(items_test)}")
         except Exception as e:
-            print(f"❌ Error en test: {e}")
+            print(f"[ERROR] Error en test: {e}")
             # Registramos pero continuamos con resiliencia
         finally:
             await test_page.close()
@@ -910,8 +918,17 @@ def export_to_excel_buffer(df: pd.DataFrame) -> bytes:
 LeadScrapper MX - Scraper Engine
 Extracción de Google Maps con Playwright asíncrono, modo stealth y selectores robustos.
 """
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import asyncio
 import random
+import time
 import re
 from datetime import datetime
 from fake_useragent import UserAgent
@@ -1264,6 +1281,14 @@ def render_coverage_badge(coverage_text: str):
 LeadScrapper MX - Aplicación Principal Streamlit
 Motor de Cuadrículas para Superar el Límite de 120 Resultados en Google Maps México.
 """
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import streamlit as st
 import pandas as pd
 import asyncio

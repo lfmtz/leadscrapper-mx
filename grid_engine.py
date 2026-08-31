@@ -2,6 +2,14 @@
 # Motor de cuadrículas para superar el límite de 120
 # resultados por búsqueda de Google Maps
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import math
 import asyncio
 import random
@@ -341,7 +349,7 @@ async def escanear_zona_completa(
     ]
 
     # DIAGNÓSTICO: verificar que Playwright funciona
-    print("🔍 Iniciando Playwright...")
+    print("[INFO] Iniciando Playwright...")
     if progress_callback:
         progress_callback({
             "tipo": "inicio",
@@ -372,9 +380,9 @@ async def escanear_zona_completa(
             )
             await test_page.wait_for_timeout(3000)
             items_test = await test_page.query_selector_all('[role="feed"] > div')
-            print(f"✅ Playwright funciona. Items en test: {len(items_test)}")
+            print(f"[OK] Playwright funciona. Items en test: {len(items_test)}")
         except Exception as e:
-            print(f"❌ Error en test: {e}")
+            print(f"[ERROR] Error en test: {e}")
             # Registramos pero continuamos con resiliencia
         finally:
             await test_page.close()

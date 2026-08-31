@@ -2,6 +2,14 @@
 LeadScrapper MX - Aplicación Principal Streamlit
 Motor de Cuadrículas para Superar el Límite de 120 Resultados en Google Maps México.
 """
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import streamlit as st
 import pandas as pd
 import asyncio
