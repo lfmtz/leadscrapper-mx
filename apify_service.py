@@ -192,6 +192,16 @@ def extraer_leads_apify(categoria: str, estado: str, municipio: str = "",
 # PUNTO DE PARTIDA (ubicación física del trabajo)
 # ─────────────────────────────────────────
 
+# Punto de partida por defecto: ubicación física del trabajo.
+# Coordenadas tomadas de Google Maps. Se puede cambiar con BASE_DIRECCION en secrets.
+BASE_DEFAULT = {
+    "nombre": "Mi trabajo",
+    "direccion": "Calz. Ignacio Zaragoza 957-A, Agrícola Oriental, Iztacalco, 08500 Ciudad de México, CDMX",
+    "lat": 19.4037044,
+    "lon": -99.069271,
+}
+
+
 def obtener_base_config() -> dict:
     """Lee la base de operaciones de st.secrets / variables de entorno."""
     def _get(clave):
@@ -204,8 +214,8 @@ def obtener_base_config() -> dict:
             pass
         return os.environ.get(clave, "").strip()
     return {
-        "nombre": _get("BASE_NOMBRE") or "Mi trabajo",
-        "direccion": _get("BASE_DIRECCION"),
+        "nombre": _get("BASE_NOMBRE") or BASE_DEFAULT["nombre"],
+        "direccion": _get("BASE_DIRECCION") or BASE_DEFAULT["direccion"],
     }
 
 
@@ -220,6 +230,8 @@ def _parse_coordenadas(texto: str):
 
 def geocodificar_direccion(direccion: str):
     """Devuelve (lat, lon, direccion_encontrada) o None."""
+    if (direccion or "").strip().lower() == BASE_DEFAULT["direccion"].lower():
+        return BASE_DEFAULT["lat"], BASE_DEFAULT["lon"], BASE_DEFAULT["direccion"]
     coords = _parse_coordenadas(direccion)
     if coords:
         return coords[0], coords[1], direccion.strip()
