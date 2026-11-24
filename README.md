@@ -46,6 +46,28 @@ http://localhost:8501
 
 ---
 
+---
+
+## 📍 Leads reales con Apify (direcciones, teléfonos y GPS)
+
+El escaneo por cuadrículas sirve para descubrir **qué categorías existen** en la zona, pero
+Google Maps no muestra la dirección completa en la lista de resultados. Para obtener
+**direcciones reales, teléfono, sitio web y coordenadas exactas** la app usa el actor
+`compass/crawler-google-places` de Apify (aprox. USD 4 por cada 1,000 negocios).
+
+1. Crea una cuenta en [apify.com](https://apify.com) y copia tu token en
+   *Settings → API & Integrations → Personal API tokens*.
+2. **Local:** copia `.streamlit/secrets.toml.example` a `.streamlit/secrets.toml` y pega tu token.
+   **Streamlit Cloud:** *Settings → Secrets* y agrega `APIFY_TOKEN = "tu_token"`.
+3. Escanea una zona, elige una categoría y pulsa **🚀 Extraer con Apify**.
+4. Descarga los leads en CSV/Excel; cada uno trae un link **🧭 Cómo llegar** con las
+   coordenadas exactas del negocio, y aparecen como pines verdes en el mapa.
+
+> ⚠️ La versión web (React, carpeta `src/`) todavía genera **datos de demostración**
+> (nombres, direcciones y teléfonos inventados). Usa la versión Streamlit para leads reales.
+
+---
+
 ## ☁️ Deploy en Streamlit Cloud (gratis)
 
 Puedes publicar la aplicación en la nube de forma 100% gratuita siguiendo estos pasos:

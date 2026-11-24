@@ -16,3 +16,6 @@ env/
 venv/
 .antigravity/
 
+
+# Secretos de Streamlit (APIFY_TOKEN)
+.streamlit/secrets.toml

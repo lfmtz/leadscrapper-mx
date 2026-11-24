@@ -14,6 +14,7 @@ import asyncio
 import random
 import time
 import re
+import urllib.parse
 from datetime import datetime
 from fake_useragent import UserAgent
 from playwright.async_api import async_playwright
@@ -116,12 +117,12 @@ async def extract_leads(
                     rating_el = await item.query_selector(".F7nice, .MW4etd, span[aria-label*='estrellas']")
                     if rating_el:
                         rating_text = await rating_el.inner_text()
-                        match_stars = re.search(r'(\\d+[.,]?\\d*)', rating_text)
+                        match_stars = re.search(r'(\d+[.,]?\d*)', rating_text)
                         if match_stars:
                             calificacion = float(match_stars.group(1).replace(',', '.'))
-                        match_rev = re.search(r'\\((\\d+[\\d,.]*)\\)', rating_text)
+                        match_rev = re.search(r'\((\d+[\d,.]*)\)', rating_text)
                         if match_rev:
-                            num_resenas = int(re.sub(r'\\D', '', match_rev.group(1)))
+                            num_resenas = int(re.sub(r'\D', '', match_rev.group(1)))
 
                     # Categoria
                     cat_el = await item.query_selector('.W4Efsd span:first-child, [data-section-id="typicaly"] button, .YkuOqf')

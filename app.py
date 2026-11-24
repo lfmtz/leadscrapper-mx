@@ -24,6 +24,8 @@ from grid_engine import (
     escanear_zona_completa
 )
 from ui_components import apply_custom_theme
+from apify_service import obtener_token, estimar_costo, extraer_leads_apify, ApifyError
+from data_processor import generate_filename, export_to_excel_buffer
 
 # Configuración de página
 st.set_page_config(
@@ -406,6 +408,80 @@ if st.session_state.get("resultado") and not st.session_state.get("escaneando"):
         cnt = categorias[cat_seleccionada]["count"]
         mostrar_panel_apify(cat_seleccionada, municipio_busqueda, estado_busqueda, cnt)
 
+    # ── EXTRAER LEADS REALES CON APIFY ───────
+    st.markdown("### 📍 Extraer leads reales (dirección, teléfono y ubicación GPS)")
+    token_apify = obtener_token()
+    if not token_apify:
+        st.warning(
+            "Falta tu token de Apify. Agrégalo como `APIFY_TOKEN` en "
+            "`.streamlit/secrets.toml` (local) o en *Settings → Secrets* de Streamlit Cloud."
+        )
+    elif cat_seleccionada:
+        col_max, col_costo = st.columns([2, 1])
+        with col_max:
+            max_leads = st.number_input(
+                "Máximo de negocios a extraer",
+                min_value=10, max_value=2000, value=100, step=10,
+                key="max_leads_apify"
+            )
+        with col_costo:
+            st.metric("Costo máximo aprox.", f"USD {estimar_costo(max_leads):.2f}")
+
+        if st.button(f"🚀 Extraer {cat_seleccionada} con Apify", type="primary",
+                     use_container_width=True):
+            estado_run = st.empty()
+            try:
+                with st.spinner("Extrayendo de Google Maps vía Apify..."):
+                    leads = extraer_leads_apify(
+                        cat_seleccionada, estado_busqueda, municipio_busqueda,
+                        max_resultados=int(max_leads), token=token_apify,
+                        progress_callback=lambda s, t: estado_run.caption(
+                            f"Estado en Apify: {s} · {t}s"
+                        ),
+                    )
+                st.session_state.leads_reales = leads
+                st.session_state.leads_reales_cat = cat_seleccionada
+            except ApifyError as e:
+                st.error(f"❌ {e}")
+
+    leads_reales = st.session_state.get("leads_reales")
+    if leads_reales:
+        st.success(
+            f"✅ {len(leads_reales)} negocios reales de "
+            f"{st.session_state.get('leads_reales_cat', '')}"
+        )
+        df_leads = pd.DataFrame(leads_reales)
+        st.dataframe(
+            df_leads[[
+                "nombre_negocio", "categoria", "direccion_completa", "telefono",
+                "calificacion", "num_resenas", "sitio_web", "link_navegacion"
+            ]],
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "link_navegacion": st.column_config.LinkColumn("Cómo llegar", display_text="🧭 Ir"),
+                "sitio_web": st.column_config.LinkColumn("Sitio web"),
+            },
+        )
+        nombre_arch = generate_filename(
+            st.session_state.get("leads_reales_cat", ""), estado_busqueda, municipio_busqueda, "csv"
+        )
+        col_l1, col_l2 = st.columns(2)
+        with col_l1:
+            st.download_button(
+                "📥 Descargar leads (.csv)",
+                df_leads.to_csv(index=False).encode("utf-8-sig"),
+                file_name=nombre_arch, mime="text/csv", use_container_width=True
+            )
+        with col_l2:
+            st.download_button(
+                "📊 Descargar leads (Excel)",
+                export_to_excel_buffer(df_leads),
+                file_name=nombre_arch.replace(".csv", ".xlsx"),
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
     # ── EXPORTAR QUERIES PARA APIFY ──────────
     st.markdown("### 📋 Queries listos para Apify")
     
@@ -534,6 +610,23 @@ if st.session_state.get("resultado") and not st.session_state.get("escaneando"):
                 }
             ).add_to(m)
         
+        # Pines de los leads reales extraídos con Apify (coordenadas exactas)
+        import html as _html
+        for lead in st.session_state.get("leads_reales") or []:
+            if lead.get("lat") is None or lead.get("lon") is None:
+                continue
+            popup = (
+                f"<b>{_html.escape(lead['nombre_negocio'])}</b><br>"
+                f"{_html.escape(lead['direccion_completa'])}<br>"
+                f"📞 {_html.escape(str(lead['telefono']))}<br>"
+                f"<a href='{_html.escape(lead['link_navegacion'])}' target='_blank'>🧭 Cómo llegar</a>"
+            )
+            folium.Marker(
+                [lead["lat"], lead["lon"]],
+                popup=folium.Popup(popup, max_width=280),
+                icon=folium.Icon(color="green", icon="briefcase", prefix="fa"),
+            ).add_to(m)
+
         st_folium(m, width=None, height=450)
     except Exception as e:
         st.info("💡 Instala folium y streamlit-folium para visualizar el mapa interactivo.")

@@ -49,7 +49,7 @@ def validate_mexico_address(direccion: str, estado_referencia: str = "", municip
     upper_addr = direccion.upper()
 
     # Extraer CP mexicano (5 dígitos)
-    cp_match = re.search(r'\\b(0[1-9]\\d{3}|[1-9]\\d{4})\\b', direccion)
+    cp_match = re.search(r'\b(0[1-9]\d{3}|[1-9]\d{4})\b', direccion)
     cp = cp_match.group(1) if cp_match else "N/A"
 
     is_valid = False
@@ -70,7 +70,7 @@ def validate_mexico_address(direccion: str, estado_referencia: str = "", municip
     # Comprobar abreviaturas si no se detectó
     if not estado_detectado:
         for abbr, full_est in ABREVIATURAS_MAP.items():
-            if re.search(r'\\b' + re.escape(abbr) + r'\\b', upper_addr):
+            if re.search(r'\b' + re.escape(abbr) + r'\b', upper_addr):
                 is_valid = True
                 estado_detectado = full_est
                 break

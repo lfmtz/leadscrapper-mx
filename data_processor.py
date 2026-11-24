@@ -12,7 +12,7 @@ def clean_phone(phone: str) -> str:
     if not phone or phone == "N/A":
         return "N/A"
     
-    digits = re.sub(r'\\D', '', phone)
+    digits = re.sub(r'\D', '', phone)
     if digits.startswith('521') and len(digits) == 13:
         digits = digits[3:]
     elif digits.startswith('52') and len(digits) == 12:
