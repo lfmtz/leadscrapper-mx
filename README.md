@@ -59,8 +59,11 @@ Google Maps no muestra la dirección completa en la lista de resultados. Para ob
    *Settings → API & Integrations → Personal API tokens*.
 2. **Local:** copia `.streamlit/secrets.toml.example` a `.streamlit/secrets.toml` y pega tu token.
    **Streamlit Cloud:** *Settings → Secrets* y agrega `APIFY_TOKEN = "tu_token"`.
-3. Escanea una zona, elige una categoría y pulsa **🚀 Extraer con Apify**.
-4. Descarga los leads en CSV/Excel; cada uno trae un link **🧭 Cómo llegar** con las
+3. (Recomendado) Agrega en secrets `BASE_DIRECCION` con la dirección de tu trabajo, o escríbela en
+   la barra lateral. Los leads se ordenan del más cercano al más lejano y la ruta **🧭 Cómo llegar**
+   sale desde tu trabajo.
+4. Escanea una zona, elige una categoría y pulsa **🚀 Extraer con Apify**.
+5. Descarga los leads en CSV/Excel; cada uno trae un link **🧭 Cómo llegar** con las
    coordenadas exactas del negocio, y aparecen como pines verdes en el mapa.
 
 > ⚠️ La versión web (React, carpeta `src/`) todavía genera **datos de demostración**

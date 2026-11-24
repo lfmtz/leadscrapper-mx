@@ -136,6 +136,7 @@ def normalizar_lugar(item: dict, cobertura: str) -> dict:
         "lat": lat,
         "lon": lng,
         "url_google_maps": item.get("url") or "N/A",
+        "place_id": place_id,
         "link_navegacion": nav,
         "fecha_extraccion": time.strftime("%Y-%m-%d"),
         "cobertura_busqueda": cobertura,
@@ -185,3 +186,82 @@ def extraer_leads_apify(categoria: str, estado: str, municipio: str = "",
         vistos.add(clave)
         leads.append(normalizar_lugar(it, cobertura))
     return leads
+
+
+# ─────────────────────────────────────────
+# PUNTO DE PARTIDA (ubicación física del trabajo)
+# ─────────────────────────────────────────
+
+def obtener_base_config() -> dict:
+    """Lee la base de operaciones de st.secrets / variables de entorno."""
+    def _get(clave):
+        try:
+            import streamlit as st
+            v = st.secrets.get(clave, "")
+            if v:
+                return str(v).strip()
+        except Exception:
+            pass
+        return os.environ.get(clave, "").strip()
+    return {
+        "nombre": _get("BASE_NOMBRE") or "Mi trabajo",
+        "direccion": _get("BASE_DIRECCION"),
+    }
+
+
+def _parse_coordenadas(texto: str):
+    """Acepta '19.3911, -99.1071' (copiado de Google Maps)."""
+    import re
+    m = re.match(r"^\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$", texto or "")
+    if m:
+        return float(m.group(1)), float(m.group(2))
+    return None
+
+
+def geocodificar_direccion(direccion: str):
+    """Devuelve (lat, lon, direccion_encontrada) o None."""
+    coords = _parse_coordenadas(direccion)
+    if coords:
+        return coords[0], coords[1], direccion.strip()
+    if not direccion or not direccion.strip():
+        return None
+    try:
+        from geopy.geocoders import Nominatim
+        geo = Nominatim(user_agent="leadscrapper_mx_v2")
+        consulta = direccion if "méxico" in direccion.lower() else f"{direccion}, México"
+        loc = geo.geocode(consulta, timeout=10, exactly_one=True, country_codes="mx")
+        if loc:
+            return loc.latitude, loc.longitude, loc.address
+    except Exception:
+        pass
+    return None
+
+
+def distancia_km(lat1, lon1, lat2, lon2) -> float:
+    """Distancia en línea recta (Haversine)."""
+    from math import radians, sin, cos, asin, sqrt
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    a = sin((lat2 - lat1) / 2) ** 2 + cos(lat1) * cos(lat2) * sin((lon2 - lon1) / 2) ** 2
+    return 2 * 6371 * asin(sqrt(a))
+
+
+def aplicar_punto_de_partida(leads: list[dict], lat_base: float, lon_base: float) -> list[dict]:
+    """
+    Calcula la distancia desde el trabajo, arma la ruta con ORIGEN en el trabajo
+    y ordena los leads del más cercano al más lejano.
+    """
+    origen = f"{lat_base},{lon_base}"
+    for lead in leads:
+        lat, lon = lead.get("lat"), lead.get("lon")
+        if lat is None or lon is None:
+            lead["distancia_km"] = None
+            continue
+        lead["distancia_km"] = round(distancia_km(lat_base, lon_base, lat, lon), 1)
+        ruta = (
+            "https://www.google.com/maps/dir/?api=1"
+            f"&origin={origen}&destination={lat},{lon}&travelmode=driving"
+        )
+        if lead.get("place_id"):
+            ruta += f"&destination_place_id={lead['place_id']}"
+        lead["link_navegacion"] = ruta
+    return sorted(leads, key=lambda l: (l.get("distancia_km") is None, l.get("distancia_km") or 0))

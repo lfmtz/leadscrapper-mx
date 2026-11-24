@@ -24,7 +24,15 @@ from grid_engine import (
     escanear_zona_completa
 )
 from ui_components import apply_custom_theme
-from apify_service import obtener_token, estimar_costo, extraer_leads_apify, ApifyError
+from apify_service import (
+    obtener_token, estimar_costo, extraer_leads_apify, ApifyError,
+    obtener_base_config, geocodificar_direccion, aplicar_punto_de_partida
+)
+
+
+@st.cache_data(show_spinner=False, ttl=86400)
+def geocodificar_base(direccion: str):
+    return geocodificar_direccion(direccion)
 from data_processor import generate_filename, export_to_excel_buffer
 
 # Configuración de página
@@ -58,11 +66,23 @@ with st.sidebar:
         index=ESTADOS_MEXICO.index("Ciudad de México") if "Ciudad de México" in ESTADOS_MEXICO else 0,
         key="mi_estado"
     )
-    mi_municipio = st.text_input(
-        "Mi municipio o colonia",
-        placeholder="Ej: Iztapalapa",
-        key="mi_municipio"
+    _base_cfg = obtener_base_config()
+    mi_direccion = st.text_input(
+        "📌 Dirección de mi trabajo (punto de partida)",
+        value=_base_cfg["direccion"],
+        placeholder="Ej: Calz. Ignacio Zaragoza 1234, Iztacalco, CDMX  ·  o  19.3911, -99.1071",
+        key="mi_direccion",
+        help="Las rutas de 'Cómo llegar' salen de aquí y los leads se ordenan del más cercano al más lejano. "
+             "También puedes pegar las coordenadas copiadas de Google Maps."
     )
+    base_trabajo = geocodificar_base(mi_direccion) if mi_direccion.strip() else None
+    if mi_direccion.strip():
+        if base_trabajo:
+            st.caption(f"✅ Ubicado: {base_trabajo[2][:90]}")
+        else:
+            st.caption("⚠️ No encontré esa dirección. Prueba agregando la colonia y el C.P., "
+                       "o pega las coordenadas de Google Maps.")
+    mi_municipio = ""
     radio_op = st.slider(
         "🎯 Radio de operación (km)",
         1, 30, 10,
@@ -450,17 +470,33 @@ if st.session_state.get("resultado") and not st.session_state.get("escaneando"):
             f"✅ {len(leads_reales)} negocios reales de "
             f"{st.session_state.get('leads_reales_cat', '')}"
         )
+        if base_trabajo:
+            leads_reales = aplicar_punto_de_partida(leads_reales, base_trabajo[0], base_trabajo[1])
+            st.session_state.leads_reales = leads_reales
+            solo_radio = st.checkbox(
+                f"Mostrar solo los que están a {radio_op} km o menos de mi trabajo", value=False
+            )
+            if solo_radio:
+                leads_reales = [l for l in leads_reales
+                                if l.get("distancia_km") is not None and l["distancia_km"] <= radio_op]
+            st.caption("📌 Ordenados del más cercano al más lejano de tu trabajo. "
+                       "'Cómo llegar' abre la ruta en coche desde tu trabajo.")
+        else:
+            st.info("📌 Escribe la dirección de tu trabajo en la barra lateral para ordenar por cercanía "
+                    "y que las rutas salgan desde ahí.")
         df_leads = pd.DataFrame(leads_reales)
+        columnas = ["nombre_negocio", "categoria", "direccion_completa", "telefono",
+                    "calificacion", "num_resenas", "sitio_web", "link_navegacion"]
+        if base_trabajo and "distancia_km" in df_leads.columns:
+            columnas.insert(0, "distancia_km")
         st.dataframe(
-            df_leads[[
-                "nombre_negocio", "categoria", "direccion_completa", "telefono",
-                "calificacion", "num_resenas", "sitio_web", "link_navegacion"
-            ]],
+            df_leads[columnas] if not df_leads.empty else df_leads,
             use_container_width=True,
             hide_index=True,
             column_config={
                 "link_navegacion": st.column_config.LinkColumn("Cómo llegar", display_text="🧭 Ir"),
                 "sitio_web": st.column_config.LinkColumn("Sitio web"),
+                "distancia_km": st.column_config.NumberColumn("Distancia (km)", format="%.1f"),
             },
         )
         nombre_arch = generate_filename(
@@ -552,10 +588,8 @@ if st.session_state.get("resultado") and not st.session_state.get("escaneando"):
     st.divider()
     st.markdown("### 🗺️ Mapa de Densidad y Base de Operaciones")
     
-    if mi_municipio:
-        lat_base, lon_base, _ = geocodificar_municipio(
-            mi_municipio, mi_estado
-        )
+    if base_trabajo:
+        lat_base, lon_base = base_trabajo[0], base_trabajo[1]
     else:
         geo = ESTADOS_GEO.get(mi_estado, {
             "lat": 19.4326, "lon": -99.1332
@@ -575,7 +609,7 @@ if st.session_state.get("resultado") and not st.session_state.get("escaneando"):
         
         folium.Marker(
             [lat_base, lon_base],
-            popup="⭐ Mi base de operaciones",
+            popup="📌 Mi trabajo (punto de partida)",
             icon=folium.Icon(
                 color="purple", icon="star", prefix="fa"
             )
