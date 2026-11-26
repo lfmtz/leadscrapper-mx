@@ -1,0 +1,14 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Variables de entorno que debes crear en Netlify
+# (Site configuration > Environment variables):
+#   APIFY_TOKEN         token de tu cuenta de Apify (Settings > API & Integrations)
+#   INEGI_TOKEN         token del DENUE de INEGI
+#   APP_ACCESS_CODE     código que la app te pide para usar tus créditos (recomendado)
+#   MAX_PLACES_PER_RUN  máximo de registros por término en una corrida (opcional, 1000 por defecto)

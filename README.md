@@ -1,5 +1,53 @@
 # 🗺️ LeadScrapper MX
-### Inteligencia Comercial para México
+### Inteligencia Comercial para México — con datos reales
+
+> **Importante:** la versión anterior de esta app mostraba negocios, teléfonos y conteos **inventados**
+> (generados en `src/services/scraperEngine.ts`). La pantalla principal ahora usa solo datos reales:
+>
+> - **INEGI DENUE** (gratis): qué giros hay en la zona, cuántos negocios y dónde están (mapa de densidad).
+> - **Google Maps vía Apify** (de pago, ≈ USD 4 por cada 1,000 registros): teléfono, calificación, reseñas y sitio web.
+>
+> La versión simulada sigue disponible en `?demo=1`, solo como referencia.
+
+## Flujo
+
+1. **Conexión:** prueba el token de Apify bajando 1 registro real.
+2. **Ubicación:** GPS de tu equipo, dirección, coordenadas o enlace de Google Maps. Confirmas el punto en el mapa
+   (el pin se puede arrastrar). Radio de 0.5 a 5 km.
+3. **Giros (INEGI):** ranking de giros por número de negocios en el radio. Marcas los que te interesan.
+4. **Apify:** cada giro se traduce a su término de Google (editable). La app te dice cuántos registros pedir y el costo máximo.
+5. **Excel:** filtras por categoría de Google, distancia y negocios cerrados, y descargas el `.xlsx` (con enlace de WhatsApp).
+
+## Configuración en Netlify
+
+1. Conecta este repositorio en Netlify (la configuración de build ya está en `netlify.toml`).
+2. En **Site configuration → Environment variables**, crea:
+
+| Variable | Valor |
+|---|---|
+| `APIFY_TOKEN` | Token de tu cuenta de Apify (console.apify.com → Settings → API & Integrations) |
+| `INEGI_TOKEN` | Token del DENUE de INEGI |
+| `APP_ACCESS_CODE` | Un código que tú inventas; la app lo pide para que nadie más gaste tus créditos |
+| `MAX_PLACES_PER_RUN` | (Opcional) Máximo de registros por término, 1000 por defecto |
+
+3. Vuelve a publicar el sitio (**Deploys → Trigger deploy**) para que tome las variables.
+
+Los tokens solo viven en las funciones de servidor (`netlify/functions/apify.mts` y `denue.mts`), nunca en el navegador.
+
+### Probar en tu computadora
+
+```bash
+npm install
+npm install -g netlify-cli
+netlify dev
+```
+
+(Con un archivo `.env` basado en `.env.example`.)
+
+---
+
+## Versión anterior (Python / Streamlit)
+
 
 ---
 
